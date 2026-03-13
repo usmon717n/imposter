@@ -10,19 +10,23 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log'],
   });
 
-  // Security
   app.use(helmet());
   app.use(cookieParser());
 
-  // CORS - allow frontend
+  // CORS
+  const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    'http://localhost:3000',
+    'http://localhost:5173',
+  ].filter(Boolean);
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -32,29 +36,22 @@ async function bootstrap() {
     }),
   );
 
-  // API prefix
   app.setGlobalPrefix('api');
 
-  // Swagger docs
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('Imposter Game API')
-      .setDescription('Imposter online o\'yin backend API')
       .setVersion('1.0')
       .addBearerAuth()
-      .addTag('auth', 'Autentifikatsiya')
-      .addTag('users', 'Foydalanuvchilar')
-      .addTag('rooms', 'O\'yin xonalari')
       .build();
-
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api/docs', app, document);
   }
 
+  // Railway PORT ni o'zi beradi, 0.0.0.0 da tinglash shart
   const port = process.env.PORT || 3001;
-  await app.listen(port);
-  console.log(`\n🎭 Imposter Game Backend running on: http://localhost:${port}`);
-  console.log(`📚 Swagger docs: http://localhost:${port}/api/docs\n`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`🎭 Backend ishga tushdi: port ${port}`);
 }
 
 bootstrap();
